@@ -28,11 +28,15 @@ export const Autocomplete: React.FC<Props> = ({
   }, [query, delay]);
 
   useEffect(() => {
+    if (query.trim() === '') {
+      setVisiblePeople(people);
+
+      return;
+    }
+
     const normalizedQuery = debouncedQuery.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      setVisiblePeople(people);
-
       return;
     }
 
@@ -41,7 +45,37 @@ export const Autocomplete: React.FC<Props> = ({
         person.name.toLowerCase().includes(normalizedQuery),
       ),
     );
-  }, [debouncedQuery, people]);
+  }, [debouncedQuery, query, people]);
+
+  const handleInputFocus = () => {
+    setIsOpen(true);
+  };
+
+  const handleInputChange = (
+    changeEvent: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const newQuery = changeEvent.target.value;
+
+    if (newQuery.trim() === '') {
+      setQuery('');
+      setDebouncedQuery('');
+      setVisiblePeople(people);
+      onChange();
+      setIsOpen(true);
+
+      return;
+    }
+
+    setQuery(newQuery);
+    onChange();
+    setIsOpen(true);
+  };
+
+  const handleSuggestionClick = (person: Person) => {
+    setQuery(person.name);
+    onSelect(person);
+    setIsOpen(false);
+  };
 
   return (
     <div className={`dropdown ${isOpen ? 'is-active' : ''}`}>
@@ -52,24 +86,8 @@ export const Autocomplete: React.FC<Props> = ({
           className="input"
           data-cy="search-input"
           value={query}
-          onFocus={() => {
-            setIsOpen(true);
-          }}
-          onChange={changeEvent => {
-            const newQuery = changeEvent.target.value;
-
-            if (newQuery.trim() === '') {
-              setQuery('');
-              onChange();
-              setIsOpen(true);
-
-              return;
-            }
-
-            setQuery(newQuery);
-            onChange();
-            setIsOpen(true);
-          }}
+          onFocus={handleInputFocus}
+          onChange={handleInputChange}
         />
       </div>
 
@@ -84,11 +102,7 @@ export const Autocomplete: React.FC<Props> = ({
               key={person.slug}
               className="dropdown-item"
               data-cy="suggestion-item"
-              onClick={() => {
-                setQuery(person.name);
-                onSelect(person);
-                setIsOpen(false);
-              }}
+              onClick={() => handleSuggestionClick(person)}
             >
               <p
                 className={
